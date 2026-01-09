@@ -1,0 +1,94 @@
+from airflow import DAG
+from airflow.operators.python import PythonOperator
+from scripts.sptrans_api import ExtractorSpTransAPI, Loader_Minio
+from datetime import datetime
+
+default_args = {
+    'owner': 'airflow',
+    'depends_on_past': False,
+    'start_date': datetime(2026, 1, 1),
+    'retries': 1,
+}
+
+def task_extract_position():
+    extractor = ExtractorSpTransAPI()
+    extractor.Authenticate()
+    return extractor.ExtractTotalPosition()
+
+def task_extract_prevision_line_stop():
+    extractor = ExtractorSpTransAPI()
+    extractor.Authenticate()
+    return  extractor.ExtractPrevisionLineStop()
+
+def task_extract_prevision_stop():
+    extractor = ExtractorSpTransAPI()
+    extractor.Authenticate()
+    return  extractor.ExtractPrevisionStop()
+
+def task_load_position(ti):
+    dados_extraidos = ti.xcom_pull(task_ids='extract_position')
+    if not dados_extraidos:
+        print("Nenhum dado foi extraído para carregar no MinIO")
+        return
+    loader = Loader_Minio()
+    loader.LoaderMinio(dados_extraidos,'raw','sptrans/position','position',True)
+
+def task_load_prevision_line_stop(ti):
+    dados_extraidos = ti.xcom_pull(task_ids='extract_prevision_line_stop')
+    if not dados_extraidos:
+        print("Nenhum dado foi extraído para carregar no MinIO")
+        return
+    loader = Loader_Minio()
+    loader.LoaderMinio(dados_extraidos,'raw','sptrans/prevision_line_stop','prevision_line_stop',True)
+
+def task_load_prevision_stop(ti):
+    dados_extraidos = ti.xcom_pull(task_ids='extract_prevision_stop')
+    if not dados_extraidos:
+        print("Nenhum dado foi extraído para carregar no MinIO")
+        return
+    loader = Loader_Minio()
+    loader.LoaderMinio(dados_extraidos,'raw','sptrans/prevision_stop','prevision_stop',True)
+
+# Criando o DAG
+with DAG(
+    'dag_sptrans_api_raw_fact',
+    default_args=default_args,
+    description='Pipeline de ingestão de dados da SPTrans para a camada raw de forma continua',
+    schedule_interval='@continuous',
+    catchup=False,
+    tags=["sptrans", "raw", "prod","fact"],
+    max_active_runs = 1
+) as dag:
+
+    t1_extract_task = PythonOperator(
+        task_id='extract_position',
+        python_callable=task_extract_position
+    )
+
+    t2_extract_task = PythonOperator(
+        task_id='extract_prevision_line_stop',
+        python_callable=task_extract_prevision_line_stop
+    )
+
+    t3_extract_task = PythonOperator(
+        task_id='extract_prevision_stop',
+        python_callable=task_extract_prevision_stop
+    )
+
+    t1_load_task = PythonOperator(
+        task_id='load_position',
+        python_callable=task_load_position
+    )
+
+    t2_load_task = PythonOperator(
+        task_id='load_prevision_line_stop',
+        python_callable=task_load_prevision_line_stop
+    )
+    t3_load_task = PythonOperator(
+        task_id='load_prevision_stop',
+        python_callable=task_load_prevision_stop
+    )
+
+    t1_extract_task >> t1_load_task
+    t2_extract_task >> t2_load_task
+    t3_extract_task >> t3_load_task

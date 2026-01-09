@@ -14,8 +14,8 @@ services:
       environment:
         MINIO_ROOT_USER: admin
         MINIO_ROOT_PASSWORD: minioadmin
-        MINIO_ACCESS_KEY: cursolab
-        MINIO_SECRET_KEY: cursolab
+        MINIO_ACCESS_KEY: projeto_final
+        MINIO_SECRET_KEY: projeto_final
       volumes:
         - ./minio/data1:/data
         - ./scripts:/scripts
@@ -45,7 +45,6 @@ services:
       - ./SparkConfigs/apacheSpark/util:/util
       - ./IntegratedPipeline/work:/home/user
       - ./SparkConfigs/apacheSpark/env:/env
-      - ./SparkConfigs/apacheSpark/dados_gtfs:/dados_gtfs
     networks:
       - rede_sptrans
 
@@ -96,19 +95,6 @@ services:
       SPARK_MASTER: spark-master
     depends_on:
       - spark-master
-    networks:
-      - rede_sptrans
-
-  mysql_airflow:
-    image: mysql:8.0.31
-    container_name: mysql_airflow
-    environment:
-      MYSQL_ROOT_PASSWORD: airflow
-      MYSQL_DATABASE: airflow
-      MYSQL_USER: airflow
-      MYSQL_PASSWORD: airflow
-    ports:
-      - "3306:3306"
     networks:
       - rede_sptrans
 

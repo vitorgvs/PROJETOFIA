@@ -3,3 +3,5 @@ psycopg2-binary==2.9.9
 apache-airflow-providers-jdbc==4.3.1
 apache-airflow-providers-amazon
 apache-airflow-providers-postgres
+pandas
+boto3
