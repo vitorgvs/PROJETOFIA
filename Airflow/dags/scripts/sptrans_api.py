@@ -203,3 +203,5 @@ class Loader_Minio():
             ContentType='application/json'
         )
         print(f"Objeto salvo em: {bucket_name}/{key}")
+        
+        
