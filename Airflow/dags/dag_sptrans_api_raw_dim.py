@@ -2,12 +2,16 @@ from airflow import DAG
 from airflow.operators.python import PythonOperator
 from scripts.sptrans_api import ExtractorSpTransAPI, Loader_Minio
 from datetime import datetime
+from pendulum import datetime, duration 
 
 default_args = {
     'owner': 'sptrans',
     'depends_on_past': False,
     'start_date': datetime(2026, 1, 1),
-    'retries': 1,
+    'retries': 2,
+    "retry_delay": duration(seconds=15), 
+    "retry_exponential_backoff": True, 
+    "max_retry_delay": duration(minutes=1)
 }
 
 def _load(ti, name_doc, partition):

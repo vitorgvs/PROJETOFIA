@@ -2,12 +2,16 @@ from airflow import DAG
 from airflow.operators.python import PythonOperator
 from scripts.sptrans_api import ExtractorSpTransAPI, Loader_Minio
 from datetime import datetime
+from pendulum import datetime, duration 
 
 default_args = {
-    'owner': 'airflow',
+    'owner': 'sptrans',
     'depends_on_past': False,
     'start_date': datetime(2026, 1, 1),
-    'retries': 1,
+    'retries': 2,
+    "retry_delay": duration(seconds=15), 
+    "retry_exponential_backoff": True, 
+    "max_retry_delay": duration(minutes=1)
 }
 
 def task_extract_position():
@@ -53,8 +57,8 @@ def task_load_prevision_stop(ti):
 with DAG(
     'dag_sptrans_api_raw_fact',
     default_args=default_args,
-    description='Pipeline de ingestão de dados da SPTrans para a camada raw de forma continua',
-    schedule_interval='@continuous',
+    description='Pipeline de ingestão de dados da SPTrans para a camada raw a cada 2 minutos',
+    schedule_interval='*/2 * * * *',
     catchup=False,
     tags=["sptrans", "raw", "prod","fact"],
     max_active_runs = 1
@@ -90,5 +94,5 @@ with DAG(
     )
 
     t1_extract_task >> t1_load_task
-    t2_extract_task >> t2_load_task
-    t3_extract_task >> t3_load_task
+    [t1_load_task] >> t2_extract_task >> t2_load_task
+    [t2_load_task] >> t3_extract_task >> t3_load_task
