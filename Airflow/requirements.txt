@@ -5,3 +5,7 @@ apache-airflow-providers-amazon
 apache-airflow-providers-postgres
 pandas
 boto3
+pendulum
+apache-airflow-providers-papermill
+pyspark
+delta-spark
