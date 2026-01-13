@@ -111,7 +111,10 @@ services:
       - rede_sptrans
 
   webserver:
-    image: apache/airflow:2.7.2-python3.11
+    build:
+      context: .              
+      dockerfile: Airflow/docker/Dockerfile
+    platform: linux/amd64
     container_name: webserver
     restart: always
     environment:
@@ -120,6 +123,7 @@ services:
       AIRFLOW__CORE__FERNET_KEY: ${FERNET_KEY:-LBi3PfqopCGRKZlFz2mXEjOCgxBtYy7q_Q3vF3rcUeA=}
       AIRFLOW__WEBSERVER__SECRET_KEY: ${FERNET_KEY:-LBi3PfqopCGRKZlFz2mXEjOCgxBtYy7q_Q3vF3rcUeA2}
       AIRFLOW__CORE__LOAD_EXAMPLES: "True"
+      AIRFLOW_CONN_SPARK_DEFAULT: 'spark://spark-master:7077'
     volumes:
       - ./Airflow/dags:/opt/airflow/dags
       - ./Airflow/requirements.txt:/requirements.txt
@@ -135,7 +139,10 @@ services:
                airflow webserver"
 
   scheduler:
-    image: apache/airflow:2.7.2-python3.11
+    build:
+      context: .              
+      dockerfile: Airflow/docker/Dockerfile
+    platform: linux/amd64
     container_name: scheduler
     restart: always
     environment:

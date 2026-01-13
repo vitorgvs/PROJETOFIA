@@ -1,5 +1,5 @@
 from airflow import DAG
-from airflow.providers.papermill.operators.papermill import PapermillOperator
+from airflow.operators.bash import BashOperator
 from airflow.sensors.external_task import ExternalTaskSensor
 from datetime import datetime
 from pendulum import datetime, duration 
@@ -32,28 +32,19 @@ with DAG(
         external_task_id=None, 
         allowed_states=['success'],
         mode='reschedule',
-        timeout=120,
-        poke_interval=5
+        timeout=300,
+        poke_interval=10
     )
 
-    position_trusted = PapermillOperator(
+    position_trusted = BashOperator(
         task_id='position_trusted',
-        input_nb='dags/scripts/notebook/raw_to_trusted_position.ipynb',
-        output_nb='dags/scripts/notebook/outputs/saida_{{ execution_date }}.ipynb',
-        parameters={
-            'data_execucao': '{{ ds }}',
-            'hora_execucao': '{{ ts }}'
-        }
+        bash_command='python /opt/airflow/dags/scripts/raw_to_trusted_position.py',
     )
-    previstion_stop_trusted = PapermillOperator(
+
+    previstion_stop_trusted = BashOperator(
         task_id='previstion_stop_trusted',
-        input_nb='dags/scripts/notebook/raw_to_trusted_prevision_stop.ipynb',
-        output_nb='dags/scripts/notebook/outputs/saida_{{ execution_date }}.ipynb',
-        parameters={
-            'data_execucao': '{{ ds }}',
-            'hora_execucao': '{{ ts }}'
-        }
+        bash_command='python /opt/airflow/dags/scripts/raw_to_trusted_prevision_stop.py',
     )
 
     # Definindo a ordem
-    ingestion_raw >> position_trusted >> previstion_stop_trusted
+    ingestion_raw >> [position_trusted ,previstion_stop_trusted]

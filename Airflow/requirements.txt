@@ -3,9 +3,7 @@ psycopg2-binary==2.9.9
 apache-airflow-providers-jdbc==4.3.1
 apache-airflow-providers-amazon
 apache-airflow-providers-postgres
-pandas
-boto3
-pendulum
-apache-airflow-providers-papermill
-pyspark
-delta-spark
+pandas==2.3.3
+aiohttp == 3.13.3
+pyspark==3.3.0
+delta-spark==2.3.0
