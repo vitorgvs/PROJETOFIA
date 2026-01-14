@@ -53,13 +53,7 @@ Após inicializar o serviço, crie um usuário admin para acessar a interface do
 - Executar o comando abaixo no terminal
 
 ```shell
-docker compose exec webserver airflow users create \
-    --username admin \
-    --firstname Firstname \
-    --lastname Lastname \
-    --role Admin \
-    --email admin@example.com \
-    --password admin
+docker compose exec webserver airflow users create --username admin --firstname Firstname --lastname Lastname --role Admin --email admin@example.com --password admin
 ```
 
 ## Configurar a Conexão MySQL no Airflow
