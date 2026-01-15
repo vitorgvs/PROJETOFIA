@@ -22,32 +22,6 @@ services:
       networks:
         rede_sptrans:
 
-  spark:
-    platform: linux/amd64
-    image: fjardim/mds-spark
-    container_name: spark
-    hostname: spark
-    command:
-      - /bin/sh
-      - -c
-      - |
-        /usr/local/spark/sbin/start-master.sh
-        start-notebook.sh --NotebookApp.token=''
-    ports:
-      - "8889:8888"
-      - "4040:4040"
-      - "4041:4041"
-      - "4042:4042"
-      - "4043:4043"
-      - "8180:8080"
-      - "7077:7077"
-    volumes:
-      - ./SparkConfigs/apacheSpark/util:/util
-      - ./IntegratedPipeline/work:/home/user
-      - ./SparkConfigs/apacheSpark/env:/env
-    networks:
-      - rede_sptrans
-
   spark-master:
     platform: linux/amd64
     image: fjardim/mds-spark

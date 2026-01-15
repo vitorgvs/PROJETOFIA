@@ -14,6 +14,16 @@ default_args = {
     "max_retry_delay": duration(minutes=1)
 }
 
+def _load(ti, name_doc, partition):
+    bucket = 'raw'
+    dados_extraidos = ti.xcom_pull(task_ids=f"extract_{name_doc}")
+    path = f"sptrans/{name_doc}"
+    if not dados_extraidos:
+        print("Nenhum dado foi extraído para carregar no MinIO")
+        return
+    loader = Loader_Minio()
+    loader.LoaderMinio(dados_extraidos,bucket,path,name_doc,partition)
+
 def task_extract_position():
     extractor = ExtractorSpTransAPI()
     extractor.Authenticate()
@@ -30,28 +40,13 @@ def task_extract_prevision_stop():
     return  extractor.ExtractPrevisionStop()
 
 def task_load_position(ti):
-    dados_extraidos = ti.xcom_pull(task_ids='extract_position')
-    if not dados_extraidos:
-        print("Nenhum dado foi extraído para carregar no MinIO")
-        return
-    loader = Loader_Minio()
-    loader.LoaderMinio(dados_extraidos,'raw','sptrans/position','position',True)
+    _load(ti,'position',True)
 
 def task_load_prevision_line_stop(ti):
-    dados_extraidos = ti.xcom_pull(task_ids='extract_prevision_line_stop')
-    if not dados_extraidos:
-        print("Nenhum dado foi extraído para carregar no MinIO")
-        return
-    loader = Loader_Minio()
-    loader.LoaderMinio(dados_extraidos,'raw','sptrans/prevision_line_stop','prevision_line_stop',True)
+    _load(ti,'prevision_line_stop',True)
 
 def task_load_prevision_stop(ti):
-    dados_extraidos = ti.xcom_pull(task_ids='extract_prevision_stop')
-    if not dados_extraidos:
-        print("Nenhum dado foi extraído para carregar no MinIO")
-        return
-    loader = Loader_Minio()
-    loader.LoaderMinio(dados_extraidos,'raw','sptrans/prevision_stop','prevision_stop',True)
+    _load(ti,'prevision_stop',True)
 
 # Criando o DAG
 with DAG(

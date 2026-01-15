@@ -362,7 +362,7 @@ class ExtractorSpTransAPI():
         return json.loads(self.api.GetShapesDataFrame().to_json(orient='records'))
     
     def ExtractStopTimes(self):
-        return json.loads(self.api.GetStopsDataFrame().to_json(orient='records'))
+        return json.loads(self.api.GetStopTimesDataFrame().to_json(orient='records'))
     
     def ExtractStops(self):
         return json.loads(self.api.GetStopsDataFrame().to_json(orient='records'))

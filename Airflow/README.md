@@ -1,6 +1,6 @@
-# Laboratório Airflow
+#Airflow
 
-Este repositório contém uma configuração do Apache Airflow utilizando Docker e Docker Compose, com integração ao MySQL para armazenamento de dados. O projeto inclui DAGs de exemplo para ingestão de dados a partir de uma API pública e armazenamento no banco de dados MySQL.
+Este repositório contém uma configuração do Apache Airflow utilizando Docker e Docker Compose. O projeto inclui DAGs relacionadas com a camada raw e trusted para ingestão de dados a partir da API pública Olho vivo da SPTrans (documentação: https://www.sptrans.com.br/desenvolvedores/api-do-olho-vivo-guia-de-referencia/documentacao-api/) com armazenamento no Minio.
 
 ## Requisitos Mínimos
 
@@ -12,11 +12,28 @@ Este repositório contém uma configuração do Apache Airflow utilizando Docker
 ## Estrutura do Projeto
 
 ```
-30.Airflow/
+Airflow/
 ├── dags/
-│   └── __init__.py
-├───── aula_airflow/
-│      └── __init__.py
+|   └── dag_sptrans_api_raw_dim.py
+|   └── dag_sptrans_api_raw_fact.py
+|   └── dag_sptrans_api_trusted_fact.py
+|   └── dag_sptrans_api_trusted_dim.py
+│   └── scripts/
+|       └── raw_to_trusted_position.py
+|       └── raw_to_trusted_prevision_stop.py
+|       └── raw_to_trusted_stops.py
+|       └── sptrans_api.py
+│       └── utils/
+|           └── agency.txt
+|           └── calendar.txt
+|           └── fare_attributes.txt
+|           └── fare_rules.txt
+|           └── frequencies.txt
+|           └── routes.txt
+|           └── shapes.txt
+|           └── stop_times.txt
+|           └── stops.txt
+|           └── trips.txt
 ├── docker/
 │   ├── Dockerfile
 │   └── docker-compose.yml
@@ -32,19 +49,10 @@ Este repositório contém uma configuração do Apache Airflow utilizando Docker
 Para inicializar o serviço, utilize o comando:
 
 ```shell
-docker compose up mysql_airflow postgres_airflow webserver scheduler
+docker-compose up -d minio webserver scheduler
 ```
 
 > *Caso não funcione o comando acima*, utilize `docker-compose` no lugar de `docker compose`
-
-Usar `Ctrl+C` para parar a execução do ambiente
-
-## Parar remover os containers do Ambiente
-
-Para parar todos os contêineres do ambiente, utilize o comando:
-```shell
-docker compose down mysql_airflow postgres_airflow webserver scheduler
-```
 
 ## Criar o Usuário para Fazer Login no Airflow
 
@@ -62,34 +70,8 @@ docker compose exec webserver airflow users create \
     --password admin
 ```
 
-## Configurar a Conexão MySQL no Airflow
-
 ### Utilizando interface gráfica
 
 1. Acesse a interface do Airflow em [http://localhost:8080](http://localhost:8080) e faça login com as credenciais criadas.
-2. Vá para `Admin` -> `Connections`.
-3. Clique em `+` para adicionar uma nova conexão e configure os campos conforme abaixo:
-
-- **Conn Id**: `mysql_default`
-- **Conn Type**: `MySQL`
-- **Host**: `mysql_airflow`
-- **Schema**: `airflow`
-- **Login**: `airflow`
-- **Password**: `airflow`
-- **Port**: `3306`
-
-### Utilizando linha de comando
-
-```shell
-docker compose exec webserver \
-    airflow connections delete 'mysql_default'
-
-docker compose exec webserver \
-    airflow connections add 'mysql_default' --conn-uri 'mysql://airflow:airflow@mysql_airflow:3306/airflow'
-```
-
-## Monitoramento de Logs
-
-Certifique-se de que a configuração acima esteja correta para evitar problemas de acesso aos logs.
 
 

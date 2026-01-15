@@ -4,28 +4,39 @@ from pyspark.sql.functions import *
 from delta.tables import DeltaTable
 from delta import *
 import os
-import pyspark
 from datetime import datetime
 
-# --- REMOVA A LÓGICA MANUAL DE PATH ---
-# Vamos confiar que o Dockerfile configurou o ENV corretamente.
-# Se precisar debuggar, apenas printe o que o sistema entregou:
+def read_latest_file(spark_session, partition_path):
+    """
+    Lê o último arquivo de uma partição MinIO usando a API Hadoop do Spark.
+    """ 
+    # Acesso à JVM interna do Spark para usar a API do Hadoop
+    sc = spark_session.sparkContext
+    URI = sc._gateway.jvm.java.net.URI
+    Path = sc._gateway.jvm.org.apache.hadoop.fs.Path
+    FileSystem = sc._gateway.jvm.org.apache.hadoop.fs.FileSystem
+    
+    # Obtém o sistema de arquivos configurado
+    fs = FileSystem.get(URI(partition_path), sc._jsc.hadoopConfiguration())
+    
+    # Lista os status dos arquivos (apenas metadados!) no caminho
+    file_statuses = fs.listStatus(Path(partition_path))
+    
+    # Filtra para remover diretórios (se houver) e pega apenas arquivos
+    files = [f for f in file_statuses if f.isFile()]
+    
+    if not files:
+        print("Nenhum arquivo encontrado.")
+        return None
+    # Ordena pela data de modificação (descendente)
+    latest_file_status = sorted(files, key=lambda f: f.getModificationTime(), reverse=True)[0]
+    return latest_file_status.getPath().toString()
+
+
 print(f"--- JAVA_HOME DO SISTEMA: {os.environ.get('JAVA_HOME', 'Não definido')} ---")
-
-# Evita conflitos de versão
 os.environ.pop("SPARK_HOME", None)
-
-# Se o JAVA_HOME estiver vazio (o que não deve acontecer se o Dockerfile rodou),
-# aí sim lançamos erro, mas não tentamos adivinhar caminhos.
 if not os.environ.get("JAVA_HOME"):
     raise RuntimeError("JAVA_HOME não veio configurado do Dockerfile!")
-
-now = datetime.now()
-ano = now.strftime('%Y')
-mes = now.strftime('%m')
-dia = now.strftime('%d')
-
-caminho_particao = f"s3a://raw/sptrans/position/ano={ano}/mes={mes}/dia={dia}/"
 
 extra_packages = ["org.apache.hadoop:hadoop-aws:3.3.2"]
 
@@ -47,6 +58,13 @@ builder = (
 
 spark = configure_spark_with_delta_pip(builder, extra_packages=extra_packages).getOrCreate()
 spark.conf.set("spark.sql.repl.eagerEval.enabled", True)
+
+now = datetime.now()
+ano = now.strftime('%Y')
+mes = now.strftime('%m')
+dia = now.strftime('%d')
+particao = f"s3a://raw/sptrans/position/ano={ano}/mes={mes}/dia={dia}/"
+caminho_particao = read_latest_file(spark, particao)
 
 df = (
     spark.read
