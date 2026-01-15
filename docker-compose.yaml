@@ -22,55 +22,81 @@ services:
       networks:
         rede_sptrans:
 
-  spark-master:
-    platform: linux/amd64
-    image: fjardim/mds-spark
-    container_name: spark-master
-    hostname: spark-master
-    command:
-      - /bin/sh
-      - -c
-      - |
-        /usr/local/spark/sbin/start-master.sh
-        start-notebook.sh --NotebookApp.token=''
-    ports:
-      - "8890:8888"
-      - "8181:8080"
-      - "7078:7077"
-    volumes:
-      - ./SparkConfigs/apacheSpark/util:/util
-      - ./SparkConfigs/apacheSpark/dados_gtfs:/dados_gtfs
-      - ./SparkConfigs/apacheSpark/work:/home/user
-      - ./SparkConfigs/apacheSpark/env:/env
-    networks:
-      - rede_sptrans
+  # spark:
+  #   platform: linux/amd64
+  #   image: fjardim/mds-spark
+  #   container_name: spark
+  #   hostname: spark
+  #   command:
+  #     - /bin/sh
+  #     - -c
+  #     - |
+  #       /usr/local/spark/sbin/start-master.sh
+  #       start-notebook.sh --NotebookApp.token=''
+  #   ports:
+  #     - "8889:8888"
+  #     - "4040:4040"
+  #     - "4041:4041"
+  #     - "4042:4042"
+  #     - "4043:4043"
+  #     - "8180:8080"
+  #     - "7077:7077"
+  #   volumes:
+  #     - ./SparkConfigs/apacheSpark/util:/util
+  #     - ./IntegratedPipeline/work:/home/user
+  #     - ./SparkConfigs/apacheSpark/env:/env
+  #   networks:
+  #     - rede_sptrans
 
-  spark-worker:
-    platform: linux/amd64
-    image: fjardim/mds-spark
-    container_name: spark-worker
-    hostname: spark-worker
-    command:
-      - /bin/sh
-      - -c
-      - |
-        /usr/local/spark/sbin/start-worker.sh spark-master:7077
-        start-notebook.sh --NotebookApp.token=''
-    env_file:
-      - ./SparkConfigs/apacheSpark/env/jupyter.env
-    ports:
-      - "5040:4040"
-      - "8881:8081"
-    volumes:
-      - ./SparkConfigs/apacheSpark/util:/util
-      - ./SparkConfigs/apacheSpark/work:/home/user
-      - ./SparkConfigs/apacheSpark/dados_gtfs:/dados_gtfs
-    environment:
-      SPARK_MASTER: spark-master
-    depends_on:
-      - spark-master
-    networks:
-      - rede_sptrans
+  # spark-master:
+  #   platform: linux/amd64
+  #   image: fjardim/mds-spark
+  #   container_name: spark-master
+  #   hostname: spark-master
+  #   command:
+  #     - /bin/sh
+  #     - -c
+  #     - |
+  #       /usr/local/spark/sbin/start-master.sh
+  #       start-notebook.sh --NotebookApp.token=''
+  #   ports:
+  #     - "8890:8888"
+  #     - "8181:8080"
+  #     - "7078:7077"
+  #   volumes:
+  #     - ./SparkConfigs/apacheSpark/util:/util
+  #     - ./SparkConfigs/apacheSpark/dados_gtfs:/dados_gtfs
+  #     - ./SparkConfigs/apacheSpark/work:/home/user
+  #     - ./SparkConfigs/apacheSpark/env:/env
+  #   networks:
+  #     - rede_sptrans
+
+  # spark-worker:
+  #   platform: linux/amd64
+  #   image: fjardim/mds-spark
+  #   container_name: spark-worker
+  #   hostname: spark-worker
+  #   command:
+  #     - /bin/sh
+  #     - -c
+  #     - |
+  #       /usr/local/spark/sbin/start-worker.sh spark-master:7077
+  #       start-notebook.sh --NotebookApp.token=''
+  #   env_file:
+  #     - ./SparkConfigs/apacheSpark/env/jupyter.env
+  #   ports:
+  #     - "5040:4040"
+  #     - "8881:8081"
+  #   volumes:
+  #     - ./SparkConfigs/apacheSpark/util:/util
+  #     - ./SparkConfigs/apacheSpark/work:/home/user
+  #     - ./SparkConfigs/apacheSpark/dados_gtfs:/dados_gtfs
+  #   environment:
+  #     SPARK_MASTER: spark-master
+  #   depends_on:
+  #     - spark-master
+  #   networks:
+  #     - rede_sptrans
 
   postgres_airflow:
     image: postgres:13
@@ -135,18 +161,90 @@ services:
       bash -c "pip install -r /requirements.txt &&
                airflow scheduler"
 
-  pgadmin:
-    image: dpage/pgadmin4:${PAGADMIN_VERSION:-7.7}
-    container_name: pgadmin_container
+  hive-metastore:
+    image: apache/hive:3.1.3
+    container_name: hive-metastore
     environment:
-      PGADMIN_DEFAULT_EMAIL: lab-pgadmin4@pgadmin.org
-      PGADMIN_DEFAULT_PASSWORD: postgres
-    ports:
-      - "5433:80"
+      SERVICE_NAME: metastore
+      HIVE_METASTORE_DB_TYPE: postgres
+      HIVE_METASTORE_USER: hive
+      HIVE_METASTORE_PASSWORD: hive
+      HIVE_METASTORE_DB_HOST: postgres_airflow
     depends_on:
       - postgres_airflow
+    ports:
+      - "9083:9083"
     networks:
       - rede_sptrans
+
+  trino:
+    image: trinodb/trino:451
+    container_name: trino
+    ports:
+      - "8085:8080"
+    volumes:
+      - ./trino/etc:/etc/trino
+    depends_on:
+      - hive-metastore
+      - minio
+    networks:
+      - rede_sptrans
+
+  # tileserver:
+  #   image: maptiler/tileserver-gl
+  #   ports:
+  #     - "8081:8080"
+  #   volumes:
+  #     - ./tiles:/data
+
+
+
+
+
+  streamlit:
+    image: python:3.10-slim
+    container_name: streamlit_app
+    working_dir: /app
+    volumes:
+      - ./streamlit:/app
+    ports:
+      - "8501:8501"
+    environment:
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ACCESS_KEY: projeto_final
+      MINIO_SECRET_KEY: projeto_final
+
+      AWS_ACCESS_KEY_ID: projeto_final
+      AWS_SECRET_ACCESS_KEY: projeto_final
+      AWS_DEFAULT_REGION: us-east-1
+      AWS_EC2_METADATA_DISABLED: "true"   # 🔥 ESSENCIAL
+      AWS_SDK_LOAD_CONFIG: "0"                  # 🔥 CRÍTICO
+      AWS_CONFIG_FILE: /dev/null                # 🔥 CRÍTICO
+      AWS_SHARED_CREDENTIALS_FILE: /dev/null    # 🔥 CRÍTICO
+    depends_on:
+      - minio
+    networks:
+      - rede_sptrans
+    command: >
+      bash -c "
+      pip install --no-cache-dir streamlit duckdb connectorx pyarrow pydeck &&
+      streamlit run app.py --server.port=8501 --server.address=0.0.0.0
+      "
+
+
+
+  # pgadmin:
+  #   image: dpage/pgadmin4:${PAGADMIN_VERSION:-7.7}
+  #   container_name: pgadmin_container
+  #   environment:
+  #     PGADMIN_DEFAULT_EMAIL: lab-pgadmin4@pgadmin.org
+  #     PGADMIN_DEFAULT_PASSWORD: postgres
+  #   ports:
+  #     - "5433:80"
+  #   depends_on:
+  #     - postgres_airflow
+  #   networks:
+  #     - rede_sptrans
 
 networks:
   rede_sptrans:
