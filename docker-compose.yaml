@@ -22,81 +22,81 @@ services:
       networks:
         rede_sptrans:
 
-  spark:
-    platform: linux/amd64
-    image: fjardim/mds-spark
-    container_name: spark
-    hostname: spark
-    command:
-      - /bin/sh
-      - -c
-      - |
-        /usr/local/spark/sbin/start-master.sh
-        start-notebook.sh --NotebookApp.token=''
-    ports:
-      - "8889:8888"
-      - "4040:4040"
-      - "4041:4041"
-      - "4042:4042"
-      - "4043:4043"
-      - "8180:8080"
-      - "7077:7077"
-    volumes:
-      - ./SparkConfigs/apacheSpark/util:/util
-      - ./IntegratedPipeline/work:/home/user
-      - ./SparkConfigs/apacheSpark/env:/env
-    networks:
-      - rede_sptrans
+  # spark:
+  #   platform: linux/amd64
+  #   image: fjardim/mds-spark
+  #   container_name: spark
+  #   hostname: spark
+  #   command:
+  #     - /bin/sh
+  #     - -c
+  #     - |
+  #       /usr/local/spark/sbin/start-master.sh
+  #       start-notebook.sh --NotebookApp.token=''
+  #   ports:
+  #     - "8889:8888"
+  #     - "4040:4040"
+  #     - "4041:4041"
+  #     - "4042:4042"
+  #     - "4043:4043"
+  #     - "8180:8080"
+  #     - "7077:7077"
+  #   volumes:
+  #     - ./SparkConfigs/apacheSpark/util:/util
+  #     - ./IntegratedPipeline/work:/home/user
+  #     - ./SparkConfigs/apacheSpark/env:/env
+  #   networks:
+  #     - rede_sptrans
 
-  spark-master:
-    platform: linux/amd64
-    image: fjardim/mds-spark
-    container_name: spark-master
-    hostname: spark-master
-    command:
-      - /bin/sh
-      - -c
-      - |
-        /usr/local/spark/sbin/start-master.sh
-        start-notebook.sh --NotebookApp.token=''
-    ports:
-      - "8890:8888"
-      - "8181:8080"
-      - "7078:7077"
-    volumes:
-      - ./SparkConfigs/apacheSpark/util:/util
-      - ./SparkConfigs/apacheSpark/dados_gtfs:/dados_gtfs
-      - ./SparkConfigs/apacheSpark/work:/home/user
-      - ./SparkConfigs/apacheSpark/env:/env
-    networks:
-      - rede_sptrans
+  # spark-master:
+  #   platform: linux/amd64
+  #   image: fjardim/mds-spark
+  #   container_name: spark-master
+  #   hostname: spark-master
+  #   command:
+  #     - /bin/sh
+  #     - -c
+  #     - |
+  #       /usr/local/spark/sbin/start-master.sh
+  #       start-notebook.sh --NotebookApp.token=''
+  #   ports:
+  #     - "8890:8888"
+  #     - "8181:8080"
+  #     - "7078:7077"
+  #   volumes:
+  #     - ./SparkConfigs/apacheSpark/util:/util
+  #     - ./SparkConfigs/apacheSpark/dados_gtfs:/dados_gtfs
+  #     - ./SparkConfigs/apacheSpark/work:/home/user
+  #     - ./SparkConfigs/apacheSpark/env:/env
+  #   networks:
+  #     - rede_sptrans
 
-  spark-worker:
-    platform: linux/amd64
-    image: fjardim/mds-spark
-    container_name: spark-worker
-    hostname: spark-worker
-    command:
-      - /bin/sh
-      - -c
-      - |
-        /usr/local/spark/sbin/start-worker.sh spark-master:7077
-        start-notebook.sh --NotebookApp.token=''
-    env_file:
-      - ./SparkConfigs/apacheSpark/env/jupyter.env
-    ports:
-      - "5040:4040"
-      - "8881:8081"
-    volumes:
-      - ./SparkConfigs/apacheSpark/util:/util
-      - ./SparkConfigs/apacheSpark/work:/home/user
-      - ./SparkConfigs/apacheSpark/dados_gtfs:/dados_gtfs
-    environment:
-      SPARK_MASTER: spark-master
-    depends_on:
-      - spark-master
-    networks:
-      - rede_sptrans
+  # spark-worker:
+  #   platform: linux/amd64
+  #   image: fjardim/mds-spark
+  #   container_name: spark-worker
+  #   hostname: spark-worker
+  #   command:
+  #     - /bin/sh
+  #     - -c
+  #     - |
+  #       /usr/local/spark/sbin/start-worker.sh spark-master:7077
+  #       start-notebook.sh --NotebookApp.token=''
+  #   env_file:
+  #     - ./SparkConfigs/apacheSpark/env/jupyter.env
+  #   ports:
+  #     - "5040:4040"
+  #     - "8881:8081"
+  #   volumes:
+  #     - ./SparkConfigs/apacheSpark/util:/util
+  #     - ./SparkConfigs/apacheSpark/work:/home/user
+  #     - ./SparkConfigs/apacheSpark/dados_gtfs:/dados_gtfs
+  #   environment:
+  #     SPARK_MASTER: spark-master
+  #   depends_on:
+  #     - spark-master
+  #   networks:
+  #     - rede_sptrans
 
   postgres_airflow:
     image: postgres:13
@@ -190,12 +190,12 @@ services:
     networks:
       - rede_sptrans
 
-  tileserver:
-    image: maptiler/tileserver-gl
-    ports:
-      - "8081:8080"
-    volumes:
-      - ./tiles:/data
+  # tileserver:
+  #   image: maptiler/tileserver-gl
+  #   ports:
+  #     - "8081:8080"
+  #   volumes:
+  #     - ./tiles:/data
 
 
 
@@ -227,24 +227,24 @@ services:
       - rede_sptrans
     command: >
       bash -c "
-      pip install --no-cache-dir streamlit duckdb pandas pyarrow delta-spark &&
+      pip install --no-cache-dir streamlit duckdb connectorx pyarrow pydeck &&
       streamlit run app.py --server.port=8501 --server.address=0.0.0.0
       "
 
 
 
-  pgadmin:
-    image: dpage/pgadmin4:${PAGADMIN_VERSION:-7.7}
-    container_name: pgadmin_container
-    environment:
-      PGADMIN_DEFAULT_EMAIL: lab-pgadmin4@pgadmin.org
-      PGADMIN_DEFAULT_PASSWORD: postgres
-    ports:
-      - "5433:80"
-    depends_on:
-      - postgres_airflow
-    networks:
-      - rede_sptrans
+  # pgadmin:
+  #   image: dpage/pgadmin4:${PAGADMIN_VERSION:-7.7}
+  #   container_name: pgadmin_container
+  #   environment:
+  #     PGADMIN_DEFAULT_EMAIL: lab-pgadmin4@pgadmin.org
+  #     PGADMIN_DEFAULT_PASSWORD: postgres
+  #   ports:
+  #     - "5433:80"
+  #   depends_on:
+  #     - postgres_airflow
+  #   networks:
+  #     - rede_sptrans
 
 networks:
   rede_sptrans:
