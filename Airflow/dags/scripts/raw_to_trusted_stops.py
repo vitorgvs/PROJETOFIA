@@ -28,6 +28,8 @@ builder = (
     .config("spark.hadoop.fs.s3a.connection.ssl.enabled", "false")
 )
 
+
+
 spark = configure_spark_with_delta_pip(builder, extra_packages=extra_packages).getOrCreate()
 spark.conf.set("spark.sql.repl.eagerEval.enabled", True)
 caminho = f"s3a://raw/sptrans/stops/"
@@ -52,7 +54,7 @@ df_flat.createOrReplaceTempView('stop')
 query = """
         SELECT
             *,
-            CURRENT-DATE() AS dt_export 
+            CURRENT_DATE() AS dt_export 
         FROM stop      
         """
 

@@ -2,9 +2,9 @@ import streamlit as st
 import duckdb
 import connectorx as cx  
 import pandas as pd 
+import pydeck as pdk
 
 st.set_page_config(page_title="Ônibus SPTrans", layout="wide")
-
 
 CONN_STR = "trino://trino@trino:8080/delta/refined"
 
@@ -17,12 +17,9 @@ def load_data_to_duckdb():
     
 
     con = duckdb.connect(database=':memory:')
-    
-
     con.register('tb_onibus', arrow_table)
     
     return con
-
 
 try:
     con = load_data_to_duckdb()
@@ -32,11 +29,27 @@ try:
 
     df_paradas = con.execute("SELECT DISTINCT nome_parada FROM tb_onibus ORDER BY nome_parada").fetch_df()
     lista_paradas = df_paradas['nome_parada'].tolist()
-    
-    parada_selecionada = st.selectbox("Selecione o Código da Parada:", lista_paradas)
+
+    if 'ultima_parada' not in st.session_state:
+        st.session_state['ultima_parada'] = lista_paradas[0] if lista_paradas else None
+
+    try:
+        idx = lista_paradas.index(st.session_state['ultima_parada'])
+    except (ValueError, IndexError):
+        idx = 0
 
 
-    query_filtrada = f"""
+    parada_selecionada = st.selectbox(
+        "Selecione o Código da Parada:", 
+        lista_paradas, 
+        index=idx,
+        key='ultima_parada'
+    )
+
+
+
+
+    query_filtrada = """
         SELECT 
             latitude_parada, 
             longitude_parada, 
@@ -45,23 +58,24 @@ try:
             letreiro, 
             prefixo_veiculo,
             veiculo_sentido, 
-            horario_previsto
+            horario_previsto,
+            minutos_para_chegada
         FROM tb_onibus 
-        WHERE nome_parada = '{parada_selecionada}'
+        WHERE nome_parada = ?
     """
-    dados_filtrados = con.execute(query_filtrada).fetch_df()
+    dados_filtrados = con.execute(query_filtrada, [parada_selecionada]).fetch_df()
 
     if not dados_filtrados.empty:
 
         lat_p = dados_filtrados.iloc[0]['latitude_parada']
         lon_p = dados_filtrados.iloc[0]['longitude_parada']
 
-  
         df_parada = pd.DataFrame({'lat': [lat_p], 'lon': [lon_p], 'nome': ['Parada Selecionada']})
         
         df_onibus = dados_filtrados[['latitude_veiculo', 'longitude_veiculo', 'letreiro', 'prefixo_veiculo', 'horario_previsto']].rename(
             columns={'latitude_veiculo': 'lat', 'longitude_veiculo': 'lon'}
         )
+
 
         view_state = pdk.ViewState(latitude=lat_p, longitude=lon_p, zoom=14, pitch=0)
 
@@ -69,7 +83,7 @@ try:
             "ScatterplotLayer",
             df_parada,
             get_position="[lon, lat]",
-            get_color="[255, 0, 0, 200]",
+            get_color="[255, 0, 0, 200]", 
             get_radius=50,
         )
 
@@ -89,18 +103,20 @@ try:
             tooltip={"text": "Linha: {letreiro}\nVeículo: {prefixo_veiculo}\nChegada: {horario_previsto}"}
         ))
 
-        st.subheader("Ônibus chegando nesta parada")
+        st.subheader("🚌 Próximos Ônibus")
         
 
-        display_cols = ['letreiro', 'veiculo_sentido', 'horario_previsto', 'prefixo_veiculo']
+        display_cols = ['letreiro', 'veiculo_sentido', 'horario_previsto', 'prefixo_veiculo', 'minutos_para_chegada']
+        
         st.dataframe(
             dados_filtrados[display_cols]
             .drop_duplicates()
-            .sort_values(by='horario_previsto', ascending=True)
+            .sort_values(by='horario_previsto', ascending=True),
+            use_container_width=True
         )
     else:
-        st.warning("Nenhum dado encontrado para esta parada.")
+        st.warning("Nenhum ônibus em trânsito para esta parada no momento.")
 
 except Exception as e:
-    st.error(f"Erro ao carregar dados do Trino: {e}")
-    st.info("Verifique se o container Trino está rodando e se a URL de conexão está correta.")
+    st.error(f"Erro na execução: {e}")
+    st.info("Verifique a conexão com o Trino e se os nomes das colunas na View estão corretos.")
