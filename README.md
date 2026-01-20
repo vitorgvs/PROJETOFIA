@@ -104,7 +104,7 @@ Dashboard interativo que permite visualizar a previsão de chegada dos ônibus e
 ### Configuração do Ambiente
 - 1. Executar o comando docker compose up -d na pasta do projeto (PROJETOFIA)
 - 2. Criar os Buckets "raw" e "trusted" e a acess key "projeto_final" (mesma senha) no Minio
-- 3. Executar as intruções de configuração do Airflow que está no arquivo .readme na pasta [Airflow](#Airflow/README.md)
+- 3. Executar as intruções de configuração do Airflow que está no arquivo .readme na pasta [Airflow](airflow/readme.md)
 - 4. Ativar as dags no airflow
-- 5. Depois da primeira execução de todas as Dags, executar no trino utilizando o Dbeaver os comantos SQL na pasta [trino](#trino\queries\queries_trino.sql).
+- 5. Depois da primeira execução de todas as Dags, executar no trino utilizando o Dbeaver os comantos SQL na pasta [trino](trino\queries\queries_trino.sql).
 - 6. O link do Streamlit para visualização das informações encontra-se em: http://localhost:8501/
